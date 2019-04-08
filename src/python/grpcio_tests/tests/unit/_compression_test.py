@@ -33,12 +33,6 @@ from tests.unit import test_common
 from tests.unit.framework.common import test_constants
 from tests.unit import _tcp_proxy
 
-# This test requires the byte length of each connection to be deterministic. As
-# it turns out, flow control puts bytes on the wire in a nondeterministic
-# manner. We disable it here in order to measure compression ratios
-# deterministically.
-os.environ['GRPC_EXPERIMENTAL_DISABLE_FLOW_CONTROL'] = 'true'
-
 _UNARY_UNARY = '/test/UnaryUnary'
 _UNARY_STREAM = '/test/UnaryStream'
 _STREAM_UNARY = '/test/StreamUnary'
@@ -212,15 +206,23 @@ def _get_compression_ratios(client_function, first_channel_kwargs,
                             first_server_handler, second_channel_kwargs,
                             second_multicallable_kwargs, second_server_kwargs,
                             second_server_handler, message):
-    first_bytes_sent, first_bytes_received = _get_byte_counts(
-        first_channel_kwargs, first_multicallable_kwargs, client_function,
-        first_server_kwargs, first_server_handler, message)
-    second_bytes_sent, second_bytes_received = _get_byte_counts(
-        second_channel_kwargs, second_multicallable_kwargs, client_function,
-        second_server_kwargs, second_server_handler, message)
-    return ((second_bytes_sent - first_bytes_sent) / float(first_bytes_sent),
-            (second_bytes_received - first_bytes_received) /
-            float(first_bytes_received))
+    try:
+        # This test requires the byte length of each connection to be deterministic. As
+        # it turns out, flow control puts bytes on the wire in a nondeterministic
+        # manner. We disable it here in order to measure compression ratios
+        # deterministically.
+        os.environ['GRPC_EXPERIMENTAL_DISABLE_FLOW_CONTROL'] = 'true'
+        first_bytes_sent, first_bytes_received = _get_byte_counts(
+            first_channel_kwargs, first_multicallable_kwargs, client_function,
+            first_server_kwargs, first_server_handler, message)
+        second_bytes_sent, second_bytes_received = _get_byte_counts(
+            second_channel_kwargs, second_multicallable_kwargs, client_function,
+            second_server_kwargs, second_server_handler, message)
+        return ((second_bytes_sent - first_bytes_sent) / float(first_bytes_sent),
+                (second_bytes_received - first_bytes_received) /
+                float(first_bytes_received))
+    finally:
+        del os.environ['GRPC_EXPERIMENTAL_DISABLE_FLOW_CONTROL']
 
 
 def _unary_unary_client(channel, multicallable_kwargs, message):
