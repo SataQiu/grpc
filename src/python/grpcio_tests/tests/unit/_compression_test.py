@@ -218,7 +218,8 @@ def _get_compression_ratios(client_function, first_channel_kwargs,
         second_bytes_sent, second_bytes_received = _get_byte_counts(
             second_channel_kwargs, second_multicallable_kwargs, client_function,
             second_server_kwargs, second_server_handler, message)
-        return ((second_bytes_sent - first_bytes_sent) / float(first_bytes_sent),
+        return ((
+            second_bytes_sent - first_bytes_sent) / float(first_bytes_sent),
                 (second_bytes_received - first_bytes_received) /
                 float(first_bytes_received))
     finally:
